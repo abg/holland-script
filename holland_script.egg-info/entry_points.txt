@@ -1,0 +1,4 @@
+
+      [holland.backup]
+      script = holland.backup.script:ScriptPlugin
+      
