@@ -14,6 +14,7 @@ plugin = script
 
 [script]
 shell = /bin/sh
+estimation-method = const:64M
 cmd = innobackupex-1.5.1 --stream=tar4ibd --slave-info /tmp > ${backupdir}/xtrabackup.tar.gz
 
 More complex:
@@ -23,5 +24,31 @@ plugin = script
 
 [script]
 shell = /bin/bash
+estimation-method = const:64M
 # exit with mysqldump exit status rather than gzip's
 cmd = mysqldump --all-databases | gzip --fast > ${backupdir}/all_databases.sql.gz; exit ${PIPESTATUS[0]}
+
+Estimation method can be set to one of:
+
+dir:<path>  - e.g. dir:/var/lib/mysql
+
+cmd:<cmdline> - e.g. echo 3.14159G
+
+const:<constant> - e.g. 4G
+
+Both cmd and const work with strings of the format:
+
+N[.N][BKMGTPE]
+
+If no units are specified the units are assumed to be bytes
+
+4 	= 4 bytes
+4B 	= 4 bytes
+4K	= 4096 bytes
+4M	= 4194304 bytes
+4G 	= 4294967296 bytes
+4.5G	= 4831838208.0 bytes
+
+cmd should output a string matching this output and const should be a simple 
+string matching this output.  Should that output not match this format the
+estimation will fail and cause the backup to fail.
