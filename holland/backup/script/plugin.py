@@ -4,8 +4,9 @@ import logging
 from string import Template
 from subprocess import Popen, STDOUT, PIPE
 from tempfile import TemporaryFile
-from util import cmd_from_config, stream2log
+from util import cmd_from_config, size_to_bytes, cmd_to_size
 from holland.core.exceptions import BackupError
+from holland.core.util.path import directory_size
 
 LOG = logging.getLogger(__name__)
 
@@ -18,6 +19,21 @@ class ScriptPlugin(object):
         self.dry_run = dry_run
 
     def estimate_backup_size(self):
+        method = self.config['script']['estimation-method']
+        if method.startswith('const:'):
+            try:
+                return size_to_bytes(method.lstrip('const:'))
+            except ValueError, exc:
+                raise BackupError("Estimation failed: %s" % exc)
+        elif method.startswith('dir:'):
+            return directory_size(method[4:])
+        elif method.startswith('cmd:'):
+            try:
+                return cmd_to_size(method[4:])
+            except ValueError, exc:
+                raise BackupError("Estimation failed: %s" % exc)
+        else:
+            raise BackupError("Unknown estimation method: %s" % method)
         return 1
 
     def backup(self):
@@ -63,6 +79,7 @@ class ScriptPlugin(object):
         [script]
         shell = string(default="/bin/sh")
         cmd = string
+        estimation-method = string(default="const:4M")
         """).strip().splitlines())
     configspec = classmethod(configspec)
 
